@@ -1,0 +1,24 @@
+package api
+
+import (
+	"log"
+	"net/http"
+
+	"github.com/gorilla/mux"
+)
+
+func setupRoutes() *mux.Router {
+	aH, err := NewAPIHandler()
+	if err != nil {
+		log.Fatal("Error setting up routing :", err)
+		return mux.NewRouter()
+	}
+
+	r := mux.NewRouter()
+	r.Use(ApplicationContext)
+
+	r.HandleFunc("/", aH.HomeHandler).Methods(http.MethodGet).Name("Home")
+
+	return r
+
+}
