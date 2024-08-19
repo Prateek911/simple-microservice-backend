@@ -1,13 +1,19 @@
 package api
 
 import (
+	"context"
 	"encoding/json"
+	"errors"
 	"log"
 	"net/http"
 	"simple-microservice-backend/config"
-	"simple-microservice-backend/internal/response"
+	"simple-microservice-backend/db/model"
+	"simple-microservice-backend/pkg/response"
+	"strconv"
 
+	"github.com/gorilla/mux"
 	jsoniter "github.com/json-iterator/go"
+	"gorm.io/gorm"
 )
 
 type APIHandler struct {
@@ -61,14 +67,14 @@ func setHeader(w http.ResponseWriter) http.ResponseWriter {
 	return w
 }
 
-func (aH *APIHandler) writeJSON(w http.ResponseWriter, r *http.Request, data interface{}) {
+func (aH *APIHandler) writeJSON(w http.ResponseWriter, r *http.Request, response interface{}) {
 	marshall := json.Marshal
 	if pretty := r.FormValue("pretty"); pretty != "" && pretty != "false" {
 		marshall = func(v interface{}) ([]byte, error) {
 			return json.MarshalIndent(v, "", "    ")
 		}
 	}
-	resp, _ := marshall(r)
+	resp, _ := marshall(response)
 	setHeader(w)
 	w.Write(resp)
 
@@ -76,14 +82,7 @@ func (aH *APIHandler) writeJSON(w http.ResponseWriter, r *http.Request, data int
 
 func RespondError(w http.ResponseWriter, apiErr response.BaseApiError, data interface{}) {
 	json := jsoniter.ConfigCompatibleWithStandardLibrary
-	b, err := json.Marshal(&ApiResponse{Status: statusError, Data: data, ErrorType: apiErr.Type(), Error: apiErr.Error()})
-	if err != nil {
-		http.Error(w, "Error Marshalling the response", http.StatusInternalServerError)
-		return
-	}
-	if _, err := w.Write(b); err != nil {
-		log.Fatalf("Error writing response :%s\n", err)
-	}
+
 	var code int
 	switch apiErr.Type() {
 	case response.ErrorBadData:
@@ -99,9 +98,18 @@ func RespondError(w http.ResponseWriter, apiErr response.BaseApiError, data inte
 	default:
 		code = http.StatusInternalServerError
 	}
+
 	setHeader(w)
 	w.WriteHeader(code)
 
+	b, err := json.Marshal(&ApiResponse{Status: statusError, Data: data, ErrorType: apiErr.Type(), Error: apiErr.Error()})
+	if err != nil {
+		http.Error(w, "Error Marshalling the response", http.StatusInternalServerError)
+		return
+	}
+	if _, err := w.Write(b); err != nil {
+		log.Fatalf("Error writing response :%s\n", err)
+	}
 }
 
 func writeHttpResponse(w http.ResponseWriter, Data interface{}) {
@@ -126,4 +134,33 @@ func (aH *APIHandler) Respond(w http.ResponseWriter, data interface{}) {
 
 func (aH *APIHandler) HomeHandler(w http.ResponseWriter, r *http.Request) {
 	writeHttpResponse(w, "Welcome to Home page")
+}
+
+func (aH *APIHandler) GetAccountByCRN(w http.ResponseWriter, r *http.Request) {
+	vars := mux.Vars(r)
+	crn, err := strconv.ParseUint(vars["crn"], 10, 32)
+	if err != nil {
+		RespondError(w, newApiErrorBadData(errors.New("invalid crn")), nil)
+	}
+
+	dBInstance, ok := r.Context().Value(dbContextKey).(*gorm.DB)
+	if !ok || dBInstance == nil {
+		RespondError(w, newApiErrorBadData(errors.New("database connection not available")), nil)
+		return
+	}
+
+	var accountMaster model.AccountMaster
+
+	if err := dBInstance.Preload("AccOwner").Where("acc_owner_id=(select id from owners where cr_number=?)", crn).First(&accountMaster).Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			RespondError(w, newApiErrorBadData(errors.New("account not found")), nil)
+		} else if errors.Is(err, context.DeadlineExceeded) {
+			RespondError(w, newApiErrorBadData(errors.New("request timed out")), nil)
+		} else {
+			RespondError(w, newApiErrorBadData(errors.New("internal server error")), nil)
+		}
+		return
+	}
+
+	aH.Respond(w, accountMaster)
 }

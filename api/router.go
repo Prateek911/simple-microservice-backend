@@ -18,6 +18,7 @@ func setupRoutes() *mux.Router {
 	r.Use(ApplicationContext)
 
 	r.HandleFunc("/", aH.HomeHandler).Methods(http.MethodGet).Name("Home")
+	r.HandleFunc("/account/{crn}", aH.GetAccountByCRN).Methods(http.MethodGet).Name("GetAccountByCRN")
 
 	return r
 

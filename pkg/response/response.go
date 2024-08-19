@@ -29,6 +29,10 @@ type ApiError struct {
 	Err error
 }
 
+func (a *ApiError) ToError() error {
+	return a.Err
+}
+
 func (a *ApiError) Type() ErrorType {
 	return a.Typ
 }
