@@ -35,14 +35,18 @@ func InitDB() {
 	pgsDB.SetConnMaxLifetime(time.Duration(dbConfig.MaxLifetime) * time.Second)
 }
 
-func Close() {
+func Close() error {
 	if DB != nil {
 		pgsDB, err := DB.DB()
 		if err != nil {
 			log.Println("Error while closing the database connection:", err)
-			return
+			return err
 		}
-		pgsDB.Close()
+		if err := pgsDB.Close(); err != nil {
+			log.Println("Error while closing the database connection:", err)
+			return err
+		}
 		log.Println("Database connection closed.")
 	}
+	return nil
 }

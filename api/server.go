@@ -72,8 +72,8 @@ func (s *Server) Start() error {
 	signal.Notify(quit, os.Interrupt, syscall.SIGTERM)
 	log.Println("Server shutting down --->:", <-quit)
 
-	if err := db.Close; err != nil {
-		log.Println("Error closing DB connection :", err)
+	if err := db.Close(); err != nil {
+		log.Fatal("Error closing DB connection :", err)
 	}
 
 	ctx, cancel := context.WithTimeout(context.Background(), time.Duration(time.Duration(opts.ContextTimeOut*60).Seconds()))
