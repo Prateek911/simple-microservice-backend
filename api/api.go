@@ -62,6 +62,10 @@ func newApiErrorBadData(err error) *response.ApiError {
 	return &response.ApiError{Typ: response.ErrorBadData, Err: err}
 }
 
+func newApiErrorInvalidData(err error) *response.ApiError {
+	return &response.ApiError{Typ: response.ErrorInternal, Err: err}
+}
+
 func setHeader(w http.ResponseWriter) http.ResponseWriter {
 	w.Header().Set("Content-type", "application/json")
 	return w
