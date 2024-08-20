@@ -32,7 +32,7 @@ const (
 )
 
 type structuredError struct {
-	Code int    `json:"data,omitempty"`
+	Code int    `json:"code,omitempty"`
 	Msg  string `json:"message,omitempty"`
 }
 
@@ -56,14 +56,6 @@ func NewAPIHandler() (*APIHandler, error) {
 	}
 
 	return &APIHandler{opts: APIHandlerOptions{serverOptions: opts}}, nil
-}
-
-func newApiErrorBadData(err error) *response.ApiError {
-	return &response.ApiError{Typ: response.ErrorBadData, Err: err}
-}
-
-func newApiErrorInvalidData(err error) *response.ApiError {
-	return &response.ApiError{Typ: response.ErrorInternal, Err: err}
 }
 
 func setHeader(w http.ResponseWriter) http.ResponseWriter {
@@ -95,7 +87,7 @@ func RespondError(w http.ResponseWriter, apiErr response.BaseApiError, data inte
 		code = http.StatusInternalServerError
 	case response.ErrorExec:
 		code = 422
-	case response.ErrorCanceled, response.ErrorTimeout:
+	case response.ErrorCanceled, response.ErrorTimeout, response.ErrorUnavailable:
 		code = http.StatusServiceUnavailable
 	case response.ErrorForbidden, response.ErrorUnauthorized:
 		code = http.StatusForbidden
@@ -136,6 +128,30 @@ func (aH *APIHandler) Respond(w http.ResponseWriter, data interface{}) {
 
 }
 
+func respondStructuredError(w http.ResponseWriter, statusCode int, data interface{}, errors []structuredError) {
+	response := structuredResponse{
+		Data:   data,
+		Errors: errors,
+	}
+	json := jsoniter.ConfigCompatibleWithStandardLibrary
+	r, err := json.Marshal(&response)
+	if err != nil {
+		http.Error(w, "Error marshalling respone", http.StatusInternalServerError)
+		return
+	}
+
+	setHeader(w)
+	w.WriteHeader(statusCode)
+
+	if _, err := w.Write(r); err != nil {
+		log.Printf("Error writing response :%s\n", err)
+	}
+}
+
+func (aH *APIHandler) RespondStructuredError(w http.ResponseWriter, statusCode int, data interface{}, errors []structuredError) {
+	respondStructuredError(w, statusCode, data, errors)
+}
+
 func (aH *APIHandler) HomeHandler(w http.ResponseWriter, r *http.Request) {
 	writeHttpResponse(w, "Welcome to Home page")
 }
@@ -144,12 +160,12 @@ func (aH *APIHandler) GetAccountByCRN(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	crn, err := strconv.ParseUint(vars["crn"], 10, 32)
 	if err != nil {
-		RespondError(w, newApiErrorBadData(errors.New("invalid crn")), nil)
+		RespondError(w, &response.ApiError{Typ: response.ErrorBadData, Err: err}, nil)
 	}
 
 	dBInstance, ok := r.Context().Value(dbContextKey).(*gorm.DB)
 	if !ok || dBInstance == nil {
-		RespondError(w, newApiErrorBadData(errors.New("database connection not available")), nil)
+		RespondError(w, &response.ApiError{Typ: response.ErrorUnavailable, Err: err}, nil)
 		return
 	}
 
@@ -157,11 +173,11 @@ func (aH *APIHandler) GetAccountByCRN(w http.ResponseWriter, r *http.Request) {
 
 	if err := dBInstance.Preload("AccOwner").Where("acc_owner_id=(select id from owners where cr_number=?)", crn).First(&accountMaster).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
-			RespondError(w, newApiErrorBadData(errors.New("account not found")), nil)
+			RespondError(w, response.NotFoundError(err), nil)
 		} else if errors.Is(err, context.DeadlineExceeded) {
-			RespondError(w, newApiErrorBadData(errors.New("request timed out")), nil)
+			RespondError(w, response.RequestTimeOut(err), nil)
 		} else {
-			RespondError(w, newApiErrorBadData(errors.New("internal server error")), nil)
+			RespondError(w, response.BadRequest(err), nil)
 		}
 		return
 	}

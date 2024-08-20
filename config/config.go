@@ -3,6 +3,8 @@ package config
 import (
 	"fmt"
 	"log"
+	"path/filepath"
+	"runtime"
 
 	"github.com/spf13/viper"
 )
@@ -37,8 +39,9 @@ func GetConnectionString(cfg *DBConfig) string {
 }
 
 func NewDBConfig() (*DBConfig, error) {
-
-	viper.AddConfigPath("/home/prateek/goProjects/simple-microservice-backend/config")
+	_, filename, _, _ := runtime.Caller(0)
+	configDir := filepath.Dir(filename)
+	viper.AddConfigPath(configDir)
 	viper.SetConfigName("local")
 	viper.SetConfigType("env")
 	viper.AutomaticEnv()
@@ -57,7 +60,9 @@ func NewDBConfig() (*DBConfig, error) {
 }
 
 func NewServerConfig() (*ServerOptions, error) {
-	viper.AddConfigPath("/home/prateek/goProjects/simple-microservice-backend/config")
+	_, filename, _, _ := runtime.Caller(0)
+	configDir := filepath.Dir(filename)
+	viper.AddConfigPath(configDir)
 	viper.SetConfigName("local")
 	viper.SetConfigType("env")
 	viper.AutomaticEnv()

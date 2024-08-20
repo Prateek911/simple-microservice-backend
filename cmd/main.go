@@ -19,7 +19,12 @@ func main() {
 		log.Fatal("Error initiliasing server")
 	}
 
-	models := []interface{}{&model.AccountMaster{}, &model.Employee{}, &model.Owner{}, &model.Payments{}, &model.Contact{}, &model.Contactables{}}
+	models := []interface{}{&model.AccountMaster{},
+		&model.Employee{},
+		&model.Owner{},
+		&model.Payments{},
+		&model.Contact{},
+		&model.Contactables{}}
 
 	for _, model := range models {
 		if err := db.DB.AutoMigrate(model); err != nil {
