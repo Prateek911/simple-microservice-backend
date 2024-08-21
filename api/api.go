@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"simple-microservice-backend/config"
 	"simple-microservice-backend/db/model"
+	"simple-microservice-backend/pkg/request"
 	"simple-microservice-backend/pkg/response"
 	entitybuilder "simple-microservice-backend/pkg/service/entityBuilder"
 	"strconv"
@@ -187,11 +188,15 @@ func (aH *APIHandler) GetAccountByCRN(w http.ResponseWriter, r *http.Request) {
 }
 
 func (aH *APIHandler) CreateOwner(w http.ResponseWriter, r *http.Request) {
-	var request response.OwnerCreate
+	var request request.OwnerCreate
 	json := jsoniter.ConfigCompatibleWithStandardLibrary
 	if err := json.NewDecoder(r.Body).Decode(&request); err != nil {
 		RespondError(w, response.BadRequest(err), "Invalid Payload")
 		return
+	}
+
+	if err := request.Validate(); err != nil {
+		respondStructuredError(w, http.StatusBadRequest, nil, []structuredError{{Code: http.StatusBadRequest, Msg: err.Error()}})
 	}
 
 	owner := entitybuilder.CreateOwner(request)
