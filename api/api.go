@@ -9,6 +9,7 @@ import (
 	"simple-microservice-backend/config"
 	"simple-microservice-backend/db/model"
 	"simple-microservice-backend/pkg/response"
+	entitybuilder "simple-microservice-backend/pkg/service/entityBuilder"
 	"strconv"
 
 	"github.com/gorilla/mux"
@@ -165,7 +166,7 @@ func (aH *APIHandler) GetAccountByCRN(w http.ResponseWriter, r *http.Request) {
 
 	dBInstance, ok := r.Context().Value(dbContextKey).(*gorm.DB)
 	if !ok || dBInstance == nil {
-		RespondError(w, &response.ApiError{Typ: response.ErrorUnavailable, Err: err}, nil)
+		http.Error(w, "Database instance not found", http.StatusInternalServerError)
 		return
 	}
 
@@ -183,4 +184,48 @@ func (aH *APIHandler) GetAccountByCRN(w http.ResponseWriter, r *http.Request) {
 	}
 
 	aH.Respond(w, accountMaster)
+}
+
+func (aH *APIHandler) CreateOwner(w http.ResponseWriter, r *http.Request) {
+	var request response.OwnerCreate
+	json := jsoniter.ConfigCompatibleWithStandardLibrary
+	if err := json.NewDecoder(r.Body).Decode(&request); err != nil {
+		RespondError(w, response.BadRequest(err), "Invalid Payload")
+		return
+	}
+
+	contact := entitybuilder.NewContactBuilder().
+		SetPhone(request.Contactable.Contact.PhoneNo).
+		SetLocation(request.Contactable.Contact.Location).
+		SetEmail(request.Contactable.Contact.Email).
+		SetAddr1(request.Contactable.Contact.Addr1).
+		SetAddr2(request.Contactable.Contact.Addr2).
+		SetAddr3(request.Contactable.Contact.Addr3).
+		Build()
+
+	contactables := entitybuilder.NewContactablesBuilder().
+		SetContact(contact).
+		SetIsActive(true).
+		Build()
+
+	owner := entitybuilder.NewOwnerBuilder().
+		SetCRNumber(request.CRNumber).
+		SetContactable(contactables).
+		SetName(request.Name).
+		Build()
+
+	dBInstance, ok := r.Context().Value(dbContextKey).(*gorm.DB)
+	if !ok || dBInstance == nil {
+		http.Error(w, "Database instance not found", http.StatusInternalServerError)
+		return
+	}
+
+	if err := dBInstance.Create(&owner).Error; err != nil {
+		respondStructuredError(w, http.StatusInternalServerError, nil, []structuredError{
+			{Code: http.StatusInternalServerError, Msg: err.Error()},
+		})
+		return
+	}
+
+	aH.Respond(w, owner)
 }

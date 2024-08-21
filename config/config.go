@@ -33,6 +33,11 @@ type ServerOptions struct {
 	Host                     int `mapstructure:"HOST"`
 }
 
+type EnvOptions struct {
+	Environment string `mapstructure:"SERVICE_VERSION"`
+	Version     string `mapstructure:"NAME"`
+}
+
 func GetConnectionString(cfg *DBConfig) string {
 	return fmt.Sprintf("host=%s user=%s password=%s dbname=%s port=%d sslmode=%s TimeZone=%s",
 		cfg.Host, cfg.User, cfg.Password, cfg.Name, cfg.Port, cfg.SSLMode, cfg.Timezone)
@@ -53,6 +58,23 @@ func NewDBConfig() (*DBConfig, error) {
 	var cfg DBConfig
 	if err := viper.Unmarshal(&cfg); err != nil {
 		log.Fatal("Error in unmarshalling DB config")
+		return nil, err
+	}
+
+	return &cfg, nil
+}
+
+func NewEnvConfig() (*EnvOptions, error) {
+	_, filename, _, _ := runtime.Caller(0)
+	configDir := filepath.Dir(filename)
+	viper.AddConfigPath(configDir)
+	viper.SetConfigName("local")
+	viper.SetConfigType("env")
+	viper.AutomaticEnv()
+
+	var cfg EnvOptions
+	if err := viper.Unmarshal(&cfg); err != nil {
+		log.Fatal("Error in unmarshalling Environment config")
 		return nil, err
 	}
 

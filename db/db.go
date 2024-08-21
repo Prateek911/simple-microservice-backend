@@ -3,6 +3,7 @@ package db
 import (
 	"log"
 	"simple-microservice-backend/config"
+	"simple-microservice-backend/db/model"
 	"time"
 
 	"gorm.io/driver/postgres"
@@ -49,4 +50,21 @@ func Close() error {
 		log.Println("Database connection closed.")
 	}
 	return nil
+}
+
+func MigrateAndResetDB(db *gorm.DB) {
+
+	db.Migrator().DropTable(&model.AccountMaster{},
+		&model.Employee{},
+		&model.Owner{},
+		&model.Payments{},
+		&model.Contact{},
+		&model.Contactables{})
+
+	db.AutoMigrate(&model.AccountMaster{},
+		&model.Employee{},
+		&model.Owner{},
+		&model.Payments{},
+		&model.Contact{},
+		&model.Contactables{})
 }

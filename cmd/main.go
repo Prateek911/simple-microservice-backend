@@ -5,7 +5,6 @@ import (
 	"simple-microservice-backend/api"
 	"simple-microservice-backend/config"
 	"simple-microservice-backend/db"
-	"simple-microservice-backend/db/model"
 	"strconv"
 )
 
@@ -19,18 +18,13 @@ func main() {
 		log.Fatal("Error initiliasing server")
 	}
 
-	models := []interface{}{&model.AccountMaster{},
-		&model.Employee{},
-		&model.Owner{},
-		&model.Payments{},
-		&model.Contact{},
-		&model.Contactables{}}
+	envOpts, err := config.NewEnvConfig()
+	if err != nil {
+		log.Fatal("Error initiliasing Env")
+	}
 
-	for _, model := range models {
-		if err := db.DB.AutoMigrate(model); err != nil {
-			log.Fatalf("Error migrating %T, %v", model, err)
-		}
-
+	if envOpts.Environment != "prod" && envOpts.Environment != "uat" {
+		db.MigrateAndResetDB(db.DB)
 	}
 
 	server, err := api.NewServer(strconv.Itoa(opts.Host))

@@ -23,5 +23,5 @@ type Contactables struct {
 	gorm.Model
 	ContactID uint
 	Contact   Contact
-	IsActive  bool `json:"isActive,omitempty"`
+	IsActive  bool `gorm:"not null" json:"isActive,omitempty"`
 }
