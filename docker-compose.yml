@@ -1,0 +1,31 @@
+version: '1.0.0'
+
+services:
+  web:
+    build:
+      context: .
+      tags:
+        - simple-microservice/simple-microservice:latest 
+    container_name: simple-microservice
+    networks:
+      - microservice-network
+    volumes:
+      - simple-microservice-data:/simple-microservice-backend
+    ports:
+      - "5200:5200"
+    environment:
+      - CONTEXT_TIMEOUT=120
+      - DB_HOST=host.docker.internal
+      - DB_USER=root
+      - DB_PASSWORD=password
+      - DB_NAME=postgres
+      - DB_PORT=5432
+      - DB_SSLMODE=disable
+      - DB_TIMEZONE=Asia/Kolkata
+
+networks:
+  microservice-network:
+    driver: bridge
+
+volumes:
+  simple-microservice-data:
