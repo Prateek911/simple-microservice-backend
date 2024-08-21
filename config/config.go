@@ -43,57 +43,49 @@ func GetConnectionString(cfg *DBConfig) string {
 		cfg.Host, cfg.User, cfg.Password, cfg.Name, cfg.Port, cfg.SSLMode, cfg.Timezone)
 }
 
-func NewDBConfig() (*DBConfig, error) {
-	_, filename, _, _ := runtime.Caller(0)
+func loadConfig(configName string, cfg interface{}) error {
+	_, filename, _, _ := runtime.Caller(1)
 	configDir := filepath.Dir(filename)
+
 	viper.AddConfigPath(configDir)
-	viper.SetConfigName("local")
+	viper.SetConfigName(configName)
 	viper.SetConfigType("env")
 	viper.AutomaticEnv()
 
 	if err := viper.ReadInConfig(); err != nil {
-		fmt.Printf("Error reading config file, %s", err)
+		return fmt.Errorf("error reading config file: %w", err)
 	}
 
+	if err := viper.Unmarshal(cfg); err != nil {
+		return fmt.Errorf("error unmarshalling config: %w", err)
+	}
+
+	return nil
+}
+
+func NewDBConfig() (*DBConfig, error) {
 	var cfg DBConfig
-	if err := viper.Unmarshal(&cfg); err != nil {
-		log.Fatal("Error in unmarshalling DB config")
+	if err := loadConfig(".env", &cfg); err != nil {
+		log.Fatalf("Failed to load DB config: %v", err)
 		return nil, err
 	}
-
 	return &cfg, nil
 }
 
 func NewEnvConfig() (*EnvOptions, error) {
-	_, filename, _, _ := runtime.Caller(0)
-	configDir := filepath.Dir(filename)
-	viper.AddConfigPath(configDir)
-	viper.SetConfigName("local")
-	viper.SetConfigType("env")
-	viper.AutomaticEnv()
-
 	var cfg EnvOptions
-	if err := viper.Unmarshal(&cfg); err != nil {
-		log.Fatal("Error in unmarshalling Environment config")
+	if err := loadConfig(".env", &cfg); err != nil {
+		log.Fatalf("Failed to load Environment config: %v", err)
 		return nil, err
 	}
-
 	return &cfg, nil
 }
 
 func NewServerConfig() (*ServerOptions, error) {
-	_, filename, _, _ := runtime.Caller(0)
-	configDir := filepath.Dir(filename)
-	viper.AddConfigPath(configDir)
-	viper.SetConfigName("local")
-	viper.SetConfigType("env")
-	viper.AutomaticEnv()
-
 	var cfg ServerOptions
-	if err := viper.Unmarshal(&cfg); err != nil {
-		log.Fatal("Error in unmarshalling Server config")
+	if err := loadConfig(".env", &cfg); err != nil {
+		log.Fatalf("Failed to load Server config: %v", err)
 		return nil, err
 	}
-
 	return &cfg, nil
 }
