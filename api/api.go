@@ -194,25 +194,7 @@ func (aH *APIHandler) CreateOwner(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	contact := entitybuilder.NewContactBuilder().
-		SetPhone(request.Contactable.Contact.PhoneNo).
-		SetLocation(request.Contactable.Contact.Location).
-		SetEmail(request.Contactable.Contact.Email).
-		SetAddr1(request.Contactable.Contact.Addr1).
-		SetAddr2(request.Contactable.Contact.Addr2).
-		SetAddr3(request.Contactable.Contact.Addr3).
-		Build()
-
-	contactables := entitybuilder.NewContactablesBuilder().
-		SetContact(contact).
-		SetIsActive(true).
-		Build()
-
-	owner := entitybuilder.NewOwnerBuilder().
-		SetCRNumber(request.CRNumber).
-		SetContactable(contactables).
-		SetName(request.Name).
-		Build()
+	owner := entitybuilder.CreateOwner(request)
 
 	dBInstance, ok := r.Context().Value(dbContextKey).(*gorm.DB)
 	if !ok || dBInstance == nil {
@@ -220,7 +202,7 @@ func (aH *APIHandler) CreateOwner(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err := dBInstance.Create(&owner).Error; err != nil {
+	if err := dBInstance.Create(owner).Error; err != nil {
 		respondStructuredError(w, http.StatusInternalServerError, nil, []structuredError{
 			{Code: http.StatusInternalServerError, Msg: err.Error()},
 		})

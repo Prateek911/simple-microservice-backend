@@ -1,6 +1,9 @@
 package entitybuilder
 
-import "simple-microservice-backend/db/model"
+import (
+	"simple-microservice-backend/db/model"
+	"simple-microservice-backend/pkg/response"
+)
 
 type ContactBuilder struct {
 	contact model.Contact
@@ -91,4 +94,28 @@ func (b *OwnerBuilder) SetContactable(contact model.Contactables) *OwnerBuilder 
 
 func (b *OwnerBuilder) Build() model.Owner {
 	return b.owner
+}
+
+func CreateOwner(request response.OwnerCreate) *model.Owner {
+	contact := NewContactBuilder().
+		SetPhone(request.Contactable.Contact.PhoneNo).
+		SetLocation(request.Contactable.Contact.Location).
+		SetEmail(request.Contactable.Contact.Email).
+		SetAddr1(request.Contactable.Contact.Addr1).
+		SetAddr2(request.Contactable.Contact.Addr2).
+		SetAddr3(request.Contactable.Contact.Addr3).
+		Build()
+
+	contactables := NewContactablesBuilder().
+		SetContact(contact).
+		SetIsActive(true).
+		Build()
+
+	owner := NewOwnerBuilder().
+		SetCRNumber(request.CRNumber).
+		SetContactable(contactables).
+		SetName(request.Name).
+		Build()
+
+	return &owner
 }
