@@ -20,6 +20,7 @@ func setupRoutes() *mux.Router {
 	r.HandleFunc("/", aH.HomeHandler).Methods(http.MethodGet).Name("Home")
 	r.HandleFunc("/account/{crn}", aH.GetAccountByCRN).Methods(http.MethodGet).Name("GetAccountByCRN")
 	r.HandleFunc("/owner", aH.CreateOwner).Methods(http.MethodPost)
+	r.HandleFunc("/owners/{id}", aH.GetOwnerByID).Methods(http.MethodGet)
 
 	return r
 

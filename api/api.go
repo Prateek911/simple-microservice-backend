@@ -214,5 +214,40 @@ func (aH *APIHandler) CreateOwner(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	aH.Respond(w, owner)
+	response := entitybuilder.BuildResponse(owner)
+
+	aH.Respond(w, response)
+}
+
+func (aH *APIHandler) GetOwnerByID(w http.ResponseWriter, r *http.Request) {
+	vars := mux.Vars(r)
+	id, err := strconv.ParseUint(vars["id"], 10, 32)
+	if err != nil {
+		RespondError(w, response.BadRequest(err), nil)
+		return
+	}
+
+	dBInstance := DBInstance(r, string(dbContextKey))
+	if dBInstance == nil {
+		http.Error(w, "Database Instance not found", http.StatusInternalServerError)
+		return
+	}
+
+	var owner model.Owner
+	if err := dBInstance.Preload("Contactable.Contact").First(&owner, id).Error; err != nil {
+		if err == gorm.ErrRecordNotFound {
+			RespondError(w, response.NotFoundError(err), nil)
+		} else {
+			RespondError(w, response.InternalError(err), nil)
+		}
+		return
+	}
+
+	response := entitybuilder.BuildResponse(&owner)
+	aH.Respond(w, response)
+
+}
+
+func DBInstance(r *http.Request, dBkey string) *gorm.DB {
+	return r.Context().Value(dBkey).(*gorm.DB)
 }
