@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"log"
 	"net/http"
 	"simple-microservice-backend/config"
@@ -165,9 +166,9 @@ func (aH *APIHandler) GetAccountByCRN(w http.ResponseWriter, r *http.Request) {
 		RespondError(w, &response.ApiError{Typ: response.ErrorBadData, Err: err}, nil)
 	}
 
-	dBInstance, ok := r.Context().Value(dbContextKey).(*gorm.DB)
-	if !ok || dBInstance == nil {
-		http.Error(w, "Database instance not found", http.StatusInternalServerError)
+	dBInstance, err := DBInstance(r, dbContextKey)
+	if err != nil || dBInstance == nil {
+		http.Error(w, "Database Instance not found", http.StatusInternalServerError)
 		return
 	}
 
@@ -201,9 +202,9 @@ func (aH *APIHandler) CreateOwner(w http.ResponseWriter, r *http.Request) {
 
 	owner := entitybuilder.CreateOwner(request)
 
-	dBInstance, ok := r.Context().Value(dbContextKey).(*gorm.DB)
-	if !ok || dBInstance == nil {
-		http.Error(w, "Database instance not found", http.StatusInternalServerError)
+	dBInstance, err := DBInstance(r, dbContextKey)
+	if err != nil || dBInstance == nil {
+		http.Error(w, "Database Instance not found", http.StatusInternalServerError)
 		return
 	}
 
@@ -227,8 +228,8 @@ func (aH *APIHandler) GetOwnerByID(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	dBInstance := DBInstance(r, string(dbContextKey))
-	if dBInstance == nil {
+	dBInstance, err := DBInstance(r, dbContextKey)
+	if err != nil || dBInstance == nil {
 		http.Error(w, "Database Instance not found", http.StatusInternalServerError)
 		return
 	}
@@ -248,6 +249,11 @@ func (aH *APIHandler) GetOwnerByID(w http.ResponseWriter, r *http.Request) {
 
 }
 
-func DBInstance(r *http.Request, dBkey string) *gorm.DB {
-	return r.Context().Value(dBkey).(*gorm.DB)
+func DBInstance(r *http.Request, dBkey interface{}) (*gorm.DB, error) {
+	dBInstance, ok := r.Context().Value(dBkey).(*gorm.DB)
+	if !ok {
+		return nil, fmt.Errorf("failed to retrieve DB connection from context")
+	}
+
+	return dBInstance, nil
 }

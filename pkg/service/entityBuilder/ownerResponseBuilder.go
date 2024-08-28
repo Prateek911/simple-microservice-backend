@@ -30,7 +30,9 @@ func (b *ClientResponseBuilder) SetUpdatedAt(updatedAt time.Time) *ClientRespons
 }
 
 func (b *ClientResponseBuilder) SetDeletedAt(deletedAt *time.Time) *ClientResponseBuilder {
-	b.response.DeletedAt = deletedAt
+	if deletedAt != nil && !deletedAt.IsZero() {
+		b.response.DeletedAt = deletedAt
+	}
 	return b
 }
 
@@ -47,6 +49,28 @@ func NewContactResponseBuilder() *ContactResponseBuilder {
 	return &ContactResponseBuilder{
 		baseBuilder: NewClientResponseBuilder(),
 	}
+}
+
+func (b *ContactResponseBuilder) SetID(id uint) *ContactResponseBuilder {
+	b.response.ID = id
+	return b
+}
+
+func (b *ContactResponseBuilder) SetCreatedAt(createdAt time.Time) *ContactResponseBuilder {
+	b.response.CreatedAt = createdAt
+	return b
+}
+
+func (b *ContactResponseBuilder) SetUpdatedAt(updatedAt time.Time) *ContactResponseBuilder {
+	b.response.UpdatedAt = updatedAt
+	return b
+}
+
+func (b *ContactResponseBuilder) SetDeletedAt(deletedAt *time.Time) *ContactResponseBuilder {
+	if deletedAt != nil && !deletedAt.IsZero() {
+		b.response.DeletedAt = deletedAt
+	}
+	return b
 }
 
 func (b *ContactResponseBuilder) SetEmail(email string) *ContactResponseBuilder {
@@ -104,6 +128,28 @@ func NewContactablesResponseBuilder() *ContactablesResponseBuilder {
 	}
 }
 
+func (b *ContactablesResponseBuilder) SetID(id uint) *ContactablesResponseBuilder {
+	b.response.ID = id
+	return b
+}
+
+func (b *ContactablesResponseBuilder) SetCreatedAt(createdAt time.Time) *ContactablesResponseBuilder {
+	b.response.CreatedAt = createdAt
+	return b
+}
+
+func (b *ContactablesResponseBuilder) SetUpdatedAt(updatedAt time.Time) *ContactablesResponseBuilder {
+	b.response.UpdatedAt = updatedAt
+	return b
+}
+
+func (b *ContactablesResponseBuilder) SetDeletedAt(deletedAt *time.Time) *ContactablesResponseBuilder {
+	if deletedAt != nil && !deletedAt.IsZero() {
+		b.response.DeletedAt = deletedAt
+	}
+	return b
+}
+
 func (b *ContactablesResponseBuilder) SetIsActive(isActive bool) *ContactablesResponseBuilder {
 	b.response.IsActive = isActive
 	return b
@@ -126,18 +172,20 @@ func (b *ContactablesResponseBuilder) Build() response.ContactablesResponse {
 	return b.response
 }
 
-// OwnerResponseBuilder builds the OwnerResponse
 type OwnerResponseBuilder struct {
 	response            response.OwnerResponse
-	baseBuilder         *ClientResponseBuilder
 	contactablesBuilder *ContactablesResponseBuilder
 }
 
 func NewOwnerResponseBuilder() *OwnerResponseBuilder {
 	return &OwnerResponseBuilder{
-		baseBuilder:         NewClientResponseBuilder(),
 		contactablesBuilder: NewContactablesResponseBuilder(),
 	}
+}
+
+func (b *OwnerResponseBuilder) SetID(id uint) *OwnerResponseBuilder {
+	b.response.ID = id
+	return b
 }
 
 func (b *OwnerResponseBuilder) SetName(name string) *OwnerResponseBuilder {
@@ -155,69 +203,58 @@ func (b *OwnerResponseBuilder) SetContactable(contactable response.ContactablesR
 	return b
 }
 
-func (b *OwnerResponseBuilder) SetBaseResponse(base response.ClientResponse) *OwnerResponseBuilder {
-	b.response.ClientResponse = base
+func (b *OwnerResponseBuilder) SetCreatedAt(createdAt time.Time) *OwnerResponseBuilder {
+	b.response.CreatedAt = createdAt
+	return b
+}
+
+func (b *OwnerResponseBuilder) SetUpdatedAt(updatedAt time.Time) *OwnerResponseBuilder {
+	b.response.UpdatedAt = updatedAt
+	return b
+}
+
+func (b *OwnerResponseBuilder) SetDeletedAt(deletedAt *time.Time) *OwnerResponseBuilder {
+	if deletedAt != nil && !deletedAt.IsZero() {
+		b.response.DeletedAt = deletedAt
+	}
 	return b
 }
 
 func (b *OwnerResponseBuilder) Build() response.OwnerResponse {
-	if b.response.ClientResponse.ID == 0 {
-		b.response.ClientResponse = b.baseBuilder.Build()
-	}
-	contactableResponse := b.contactablesBuilder.
-		SetBaseResponse(b.response.ClientResponse).
-		SetIsActive(b.response.Contactable.IsActive).
-		SetContact(b.response.Contactable.Contact).
-		Build()
-
-	b.response.Contactable = contactableResponse
-
 	return b.response
 }
 
 func BuildResponse(owner *model.Owner) response.OwnerResponse {
+	contactResponse := NewContactResponseBuilder().
+		SetID(owner.Contactable.Contact.ID).
+		SetCreatedAt(owner.Contactable.Contact.CreatedAt).
+		SetUpdatedAt(owner.Contactable.Contact.UpdatedAt).
+		SetDeletedAt(&owner.Contactable.Contact.DeletedAt.Time).
+		SetEmail(owner.Contactable.Contact.Email).
+		SetPhoneNo(owner.Contactable.Contact.PhoneNo).
+		SetLocation(owner.Contactable.Contact.Location).
+		SetAddr1(owner.Contactable.Contact.Addr1).
+		SetAddr2(owner.Contactable.Contact.Addr2).
+		SetAddr3(owner.Contactable.Contact.Addr3).
+		Build()
+
+	contactableResponse := NewContactablesResponseBuilder().
+		SetID(owner.Contactable.ID).
+		SetCreatedAt(owner.Contactable.CreatedAt).
+		SetUpdatedAt(owner.Contactable.UpdatedAt).
+		SetDeletedAt(&owner.Contactable.DeletedAt.Time).
+		SetIsActive(owner.Contactable.IsActive).
+		SetContact(contactResponse).
+		Build()
+
 	ownerResponse := NewOwnerResponseBuilder().
+		SetID(owner.ID).
+		SetCreatedAt(owner.CreatedAt).
+		SetUpdatedAt(owner.UpdatedAt).
+		SetDeletedAt(&owner.DeletedAt.Time).
 		SetName(owner.Name).
 		SetCRNumber(owner.CRNumber).
-		SetBaseResponse(
-			NewClientResponseBuilder().
-				SetID(owner.ID).
-				SetCreatedAt(owner.CreatedAt).
-				SetUpdatedAt(owner.UpdatedAt).
-				SetDeletedAt(&owner.DeletedAt.Time).
-				Build(),
-		).
-		SetContactable(
-			NewContactablesResponseBuilder().
-				SetBaseResponse(
-					NewClientResponseBuilder().
-						SetID(owner.Contactable.ID).
-						SetCreatedAt(owner.Contactable.CreatedAt).
-						SetUpdatedAt(owner.Contactable.UpdatedAt).
-						SetDeletedAt(&owner.Contactable.DeletedAt.Time).
-						Build(),
-				).
-				SetIsActive(owner.Contactable.IsActive).
-				SetContact(
-					NewContactResponseBuilder().
-						SetBaseResponse(
-							NewClientResponseBuilder().
-								SetID(owner.Contactable.Contact.ID).
-								SetCreatedAt(owner.Contactable.Contact.CreatedAt).
-								SetUpdatedAt(owner.Contactable.Contact.UpdatedAt).
-								SetDeletedAt(&owner.Contactable.Contact.DeletedAt.Time).
-								Build(),
-						).
-						SetEmail(owner.Contactable.Contact.Email).
-						SetPhoneNo(owner.Contactable.Contact.PhoneNo).
-						SetLocation(owner.Contactable.Contact.Location).
-						SetAddr1(owner.Contactable.Contact.Addr1).
-						SetAddr2(owner.Contactable.Contact.Addr2).
-						SetAddr3(owner.Contactable.Contact.Addr3).
-						Build(),
-				).
-				Build(),
-		).
+		SetContactable(contactableResponse).
 		Build()
 
 	return ownerResponse
