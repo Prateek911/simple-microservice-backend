@@ -12,6 +12,7 @@ import (
 	"simple-microservice-backend/pkg/request"
 	"simple-microservice-backend/pkg/response"
 	entitybuilder "simple-microservice-backend/pkg/service/entityBuilder"
+	"simple-microservice-backend/pkg/service/responseBuilder"
 	"strconv"
 
 	"github.com/gorilla/mux"
@@ -215,7 +216,7 @@ func (aH *APIHandler) CreateOwner(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	response := entitybuilder.BuildResponse(owner)
+	response := responseBuilder.BuildResponse(owner)
 
 	aH.Respond(w, response)
 }
@@ -235,7 +236,7 @@ func (aH *APIHandler) GetOwnerByID(w http.ResponseWriter, r *http.Request) {
 	}
 
 	var owner model.Owner
-	if err := dBInstance.Preload("Contactable.Contact").First(&owner, id).Error; err != nil {
+	if err := dBInstance.Preload("Contact").First(&owner, id).Error; err != nil {
 		if err == gorm.ErrRecordNotFound {
 			RespondError(w, response.NotFoundError(err), nil)
 		} else {
@@ -244,7 +245,7 @@ func (aH *APIHandler) GetOwnerByID(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	response := entitybuilder.BuildResponse(&owner)
+	response := responseBuilder.BuildResponse(&owner)
 	aH.Respond(w, response)
 
 }

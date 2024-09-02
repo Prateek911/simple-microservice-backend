@@ -58,13 +58,11 @@ func MigrateAndResetDB(db *gorm.DB) {
 		&model.Employee{},
 		&model.Owner{},
 		&model.Payments{},
-		&model.Contact{},
-		&model.Contactables{})
+		&model.Contact{})
 
 	db.AutoMigrate(&model.AccountMaster{},
 		&model.Employee{},
 		&model.Owner{},
 		&model.Payments{},
-		&model.Contact{},
-		&model.Contactables{})
+		&model.Contact{})
 }

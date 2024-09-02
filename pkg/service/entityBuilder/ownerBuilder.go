@@ -43,30 +43,13 @@ func (b *ContactBuilder) SetAddr3(addr3 string) *ContactBuilder {
 	return b
 }
 
+func (b *ContactBuilder) SetIsActive(isActive bool) *ContactBuilder {
+	b.contact.IsActive = isActive
+	return b
+}
+
 func (b *ContactBuilder) Build() model.Contact {
 	return b.contact
-}
-
-type ContactablesBuilder struct {
-	contactables model.Contactables
-}
-
-func NewContactablesBuilder() *ContactablesBuilder {
-	return &ContactablesBuilder{}
-}
-
-func (b *ContactablesBuilder) SetContact(contact model.Contact) *ContactablesBuilder {
-	b.contactables.Contact = contact
-	return b
-}
-
-func (b *ContactablesBuilder) SetIsActive(isActive bool) *ContactablesBuilder {
-	b.contactables.IsActive = isActive
-	return b
-}
-
-func (b *ContactablesBuilder) Build() model.Contactables {
-	return b.contactables
 }
 
 type OwnerBuilder struct {
@@ -87,8 +70,8 @@ func (b *OwnerBuilder) SetCRNumber(crNumber uint) *OwnerBuilder {
 	return b
 }
 
-func (b *OwnerBuilder) SetContactable(contact model.Contactables) *OwnerBuilder {
-	b.owner.Contactable = contact
+func (b *OwnerBuilder) SetContact(contact model.Contact) *OwnerBuilder {
+	b.owner.Contact = contact
 	return b
 }
 
@@ -98,22 +81,18 @@ func (b *OwnerBuilder) Build() model.Owner {
 
 func CreateOwner(request request.OwnerCreate) *model.Owner {
 	contact := NewContactBuilder().
-		SetPhone(request.Contactable.Contact.PhoneNo).
-		SetLocation(request.Contactable.Contact.Location).
-		SetEmail(request.Contactable.Contact.Email).
-		SetAddr1(request.Contactable.Contact.Addr1).
-		SetAddr2(request.Contactable.Contact.Addr2).
-		SetAddr3(request.Contactable.Contact.Addr3).
-		Build()
-
-	contactables := NewContactablesBuilder().
-		SetContact(contact).
+		SetPhone(request.Contact.PhoneNo).
+		SetLocation(request.Contact.Location).
+		SetEmail(request.Contact.Email).
+		SetAddr1(request.Contact.Addr1).
+		SetAddr2(request.Contact.Addr2).
+		SetAddr3(request.Contact.Addr3).
 		SetIsActive(true).
 		Build()
 
 	owner := NewOwnerBuilder().
 		SetCRNumber(request.CRNumber).
-		SetContactable(contactables).
+		SetContact(contact).
 		SetName(request.Name).
 		Build()
 

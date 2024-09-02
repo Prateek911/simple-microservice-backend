@@ -2,7 +2,7 @@ package response
 
 import "time"
 
-type ClientResponse struct {
+type BaseResponse struct {
 	ID        uint       `json:"id"`
 	CreatedAt time.Time  `json:"createdAt"`
 	UpdatedAt time.Time  `json:"updatedAt"`

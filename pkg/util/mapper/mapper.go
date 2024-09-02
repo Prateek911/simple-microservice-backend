@@ -7,6 +7,7 @@ import (
 
 // Map copies fields from source to target where field names and types match.
 // It handles nested structs and custom types if they are valid.
+// Doesn't work lmao (nested structs breaking it)
 func Map(source interface{}, target interface{}) error {
 	sourceVal := reflect.ValueOf(source)
 	targetVal := reflect.ValueOf(target).Elem()

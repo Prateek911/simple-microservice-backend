@@ -4,12 +4,14 @@ import "gorm.io/gorm"
 
 type Employee struct {
 	gorm.Model
-	Firstname     string `gorm:"not null;size:255" json:"firstName,omitempty"`
-	LastName      string `gorm:"not null;size:255" json:"LastName,omitempty"`
-	MiddleName    string `gorm:"size:255" json:"MiddleName,omitempty"`
-	Mnemonic      string `gorm:"not null;size:32" json:"mnemonic,omitempty"`
-	ContactableID uint
-	Contactable   Contactables
+	Firstname  string       `gorm:"not null;size:255" json:"firstName,omitempty"`
+	LastName   string       `gorm:"not null;size:255" json:"LastName,omitempty"`
+	MiddleName string       `gorm:"size:255" json:"MiddleName,omitempty"`
+	Mnemonic   string       `gorm:"not null;size:32" json:"mnemonic,omitempty"`
+	Department WorkGroup    `gorm:"not null;size:32" json:"department,omitempty"`
+	Role       EmployeeRole `gorm:"not null;size:32" json:"role,omitempty"`
+	ContactID  uint
+	Contact    Contact
 }
 
 type EmployeeRole string
